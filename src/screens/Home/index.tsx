@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { Header } from '../../components/Header';
+import { Loading } from '../../components/Loading';
 import { SearchBar } from '../../components/SearchBar';
 import { LoginDataItem } from '../../components/LoginDataItem';
 
@@ -13,6 +14,7 @@ import {
   TotalPassCount,
   LoginList,
 } from './styles';
+import { Alert } from 'react-native';
 
 interface LoginDataProps {
   id: string;
@@ -25,20 +27,36 @@ type LoginListDataProps = LoginDataProps[];
 
 export function Home() {
   const [searchText, setSearchText] = useState('');
+  const [loading, setLoading] = useState(true);
   const [searchListData, setSearchListData] = useState<LoginListDataProps>([]);
   const [data, setData] = useState<LoginListDataProps>([]);
 
   async function loadData() {
-    const dataKey = '@savepass:logins';
-    // Get asyncStorage data, use setSearchListData and setData
+   try {
+      const dataKey = '@savepass:logins';
+
+      const loginsStoraged = await AsyncStorage.getItem(dataKey);
+
+      if(loginsStoraged) {
+        setData(JSON.parse(loginsStoraged));
+        setSearchListData(JSON.parse(loginsStoraged));
+      }
+   } catch (error) {
+      Alert.alert(error as string);
+   }finally{
+      setLoading(false)
+   }
   }
 
   function handleFilterLoginData() {
-    // Filter results inside data, save with setSearchListData
+    if(!!searchText){
+      const loginsFiltered = data.filter(({service_name}) => searchText === service_name); 
+      setSearchListData(loginsFiltered);
+    }
   }
 
   function handleChangeInputText(text: string) {
-    // Update searchText value
+    setSearchText(text);
   }
 
   useFocusEffect(useCallback(() => {
@@ -60,7 +78,6 @@ export function Home() {
           value={searchText}
           returnKeyType="search"
           onSubmitEditing={handleFilterLoginData}
-
           onSearchButtonPress={handleFilterLoginData}
         />
 
